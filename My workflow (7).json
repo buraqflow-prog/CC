@@ -1,0 +1,871 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=The customer has sent the following message:\n\"{{ $json.chatInput }}\"\n\nAnalyze the message carefully to understand the user's intent related to car rental.\n\nReturn ONLY a valid JSON object in this exact format (no extra text or explanation):\n\n{\n  \"Intent\": \"rent_car\",\n  \"Car_Model\": \"<car name>\",\n  \"Start_Date\": \"<start date>\",\n  \"End_Date\": \"<end date>\"\n}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=You are **AtlasDrive AI Assistant**, a professional and multilingual virtual agent for the AtlasDrive Car Rental Agency.\n\nYour mission is to **assist clients with all operations related to car rentals**, while maintaining a friendly, respectful, and efficient tone.  \nAlways communicate in the same language used by the customer (Arabic, Darija, French, or English).\n\n---\n\n### 🧭 Core Responsibilities:\n\n1. **Customer Interaction**\n   - Start every chat with a warm, professional greeting.\n   - Adapt your tone based on the user’s language and formality level.\n   - Always sign off politely (e.g., “Thank you for choosing AtlasDrive 🚗”).\n\n2. **Car Booking Process**\n   - Collect essential details to create a booking:\n     - Customer Full Name  \n     - Phone Number  \n     - National ID or Passport Number  \n     - Car Type / Model Requested  \n     - Pickup Date & Return Date  \n     - Pickup Location\n   - Before confirming, verify car availability using the `car_availability_sheet_tool`.\n   - If available:\n     - Generate a unique Booking ID via the `code_tool`.\n     - Record the booking in the `rental_booking_sheet_tool`.\n     - Update car status using the `update_car_status_tool`.\n     - Send a confirmation message using `send_notification_tool`.\n   - If unavailable:\n     - Offer alternative cars using `car_recommendation_tool`.\n\n3. **Booking Management**\n   - Customers can request:\n     - **Booking status check:** use `booking_lookup_tool`.\n     - **Booking cancellation:** update status via `cancel_booking_tool`.\n     - **Booking modification:** update details via `update_booking_tool`.\n\n4. **General Information**\n   - If the client asks about:\n     - available cars,  \n     - pricing,  \n     - insurance,  \n     - office locations,  \n     - or services,\n     use the **Simple Vector Store (`RENTAL CAR`)** to retrieve relevant data from the knowledge base document (`AtlasDrive_Master_Info.txt`).\n\n5. **Activity Tracking**\n   - Log all important actions in the `activity_log_sheet_tool`:\n     - New booking  \n     - Cancellation  \n     - Update requests  \n     - User interactions\n\n---\n\n### 🧰 Tools and Future Integrations:\n\n| Tool Name | Purpose |\n|------------|----------|\n| `car_availability_sheet_tool` | Check if the requested car is available for the given date. |\n| `rental_booking_sheet_tool` | Record new bookings. |\n| `update_car_status_tool` | Update car status (Available, Rented, Maintenance). |\n| `cancel_booking_tool` | Cancel a booking and mark car as available again. |\n| `booking_lookup_tool` | Retrieve information about an existing booking. |\n| `update_booking_tool` | Modify customer or booking details. |\n| `car_recommendation_tool` | Suggest alternative vehicles. |\n| `activity_log_sheet_tool` | Log all actions or customer interactions. |\n| `send_notification_tool` | Send confirmation or update messages (can be WhatsApp or NodOn Message). |\n| `Simple Vector Store (RENTAL CAR)` | Knowledge base for agency details and services. |\n| `code_tool` | Generate unique Booking IDs. |\n\n---\n\n### 💬 Language Handling:\nDetect the user’s language from the first message, and respond **exclusively** in that language for the rest of the conversation.\n\nExample:\n- If the user starts in Darija → reply in Darija.  \n- If in French → reply in French, etc.\n\n---\n\n### 🚨 Error & Exception Handling:\n- If a tool or sheet fails, politely inform the user that a technical issue occurred.\n- Never expose tool names or raw data directly — explain in natural language.\n- Always confirm before performing irreversible actions like cancellations.\n\n---\n\n### 💡 Personality Guidelines:\n- Polite, efficient, and reliable.  \n- Avoid over-explaining technical stuff.  \n- Keep messages short, friendly, and to the point.  \n- Use emojis occasionally (🚗✨📅) for a natural tone.\n\n---\n\nYou are **AtlasDrive AI**, the professional digital agent representing the AtlasDrive Car Rental Agency.\nAlways prioritize clarity, customer satisfaction, and operational accuracy.\n\n\n\n\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        480,
+        -16
+      ],
+      "id": "00bc216c-aa9c-47a4-9347-1225e241fa49",
+      "name": "AI Agent",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.sessionId }}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -32,
+        240
+      ],
+      "id": "7a9e2d7b-397c-4402-b52c-67ace0ff8885",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "312d5697-4c56-4ff2-9356-6c9d74fb5391",
+      "name": "When chat message received",
+      "webhookId": "79855e2b-b354-4c95-8c2f-946c2864c920"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "16z0dGyEaV_Nb3LTGAnLRqljdcr84dXGG",
+          "mode": "list",
+          "cachedResultName": "N8N",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/16z0dGyEaV_Nb3LTGAnLRqljdcr84dXGG"
+        },
+        "event": "fileUpdated",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        -128,
+        480
+      ],
+      "id": "8add72f0-9fd7-4686-9add-f8e134789ded",
+      "name": "Google Drive Trigger",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "sWqKRN4DJMrKsUte",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "memoryKey": {
+          "__rl": true,
+          "value": "RENTAL CAR",
+          "mode": "list"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        528,
+        560
+      ],
+      "id": "6f7d8116-4d05-4003-936d-1a562c2ca694",
+      "name": "Simple Vector Store"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        432,
+        736
+      ],
+      "id": "84b17653-a7c4-4723-9fec-88d83876f409",
+      "name": "Embeddings Google Gemini",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "1GpC0UMbf9bOkjA9",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "binaryMode": "specificField",
+        "loader": "textLoader",
+        "textSplittingMode": "custom",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        576,
+        752
+      ],
+      "id": "a8a4dac8-59ea-414e-8826-b2b4633c6596",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "chunkSize": 500,
+        "chunkOverlap": 40
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterTokenSplitter",
+      "typeVersion": 1,
+      "position": [
+        944,
+        832
+      ],
+      "id": "271b4ba9-0a56-4125-a25f-382b18ae412e",
+      "name": "Token Splitter"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Use this tool to get information about the rental car, ",
+        "memoryKey": {
+          "__rl": true,
+          "value": "RENTAL CAR",
+          "mode": "list",
+          "cachedResultName": "RENTAL CAR"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        288,
+        288
+      ],
+      "id": "3a6a5df1-e0f4-4d54-88db-78eaf04f8e10",
+      "name": "Simple Vector Store1"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        128,
+        320
+      ],
+      "id": "11bf111b-fa58-408c-ba75-b25cb01acce2",
+      "name": "Embeddings Google Gemini1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "1GpC0UMbf9bOkjA9",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -208,
+        224
+      ],
+      "id": "a9772019-6726-456c-ab0b-9f2eb1e7c68b",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "1GpC0UMbf9bOkjA9",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        192,
+        528
+      ],
+      "id": "c8b994ba-3ebc-4d51-ba62-c5c45de3811f",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "sWqKRN4DJMrKsUte",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1EYrvcKycUeCHp51r5wo0RHcik484L1urOEreY88Bk10",
+          "mode": "list",
+          "cachedResultName": "rental_requests",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EYrvcKycUeCHp51r5wo0RHcik484L1urOEreY88Bk10/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Feuille 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EYrvcKycUeCHp51r5wo0RHcik484L1urOEreY88Bk10/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Booking_ID": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Booking_ID', ``, 'string') }}",
+            "Customer_Name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Customer_Name', ``, 'string') }}",
+            "Customer_Number": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Customer_Number', ``, 'string') }}",
+            "Car_Model": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Car_Model', ``, 'string') }}",
+            "Pickup_Date": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Pickup_Date', ``, 'string') }}",
+            "Return_Date": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Return_Date', ``, 'string') }}",
+            "Status": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Status', ``, 'string') }}",
+            "Linked_Car_ID": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Linked_Car_ID', ``, 'string') }}",
+            "Delivery_Location": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Delivery_Location', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Booking_ID",
+              "displayName": "Booking_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Customer_Name",
+              "displayName": "Customer_Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Customer_Number",
+              "displayName": "Customer_Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Car_Model",
+              "displayName": "Car_Model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Pickup_Date",
+              "displayName": "Pickup_Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Return_Date",
+              "displayName": "Return_Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Delivery_Location",
+              "displayName": "Delivery_Location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Linked_Car_ID",
+              "displayName": "Linked_Car_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1200,
+        304
+      ],
+      "id": "0d00ce97-0c71-429f-ae56-76dbcda64d60",
+      "name": "rental_requests_tool",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RT6MxE4j8hDaB8MB",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1Dp3j4MU_HL7emAZhBKcO_jkV2pciN-rqBjy-KW5s630",
+          "mode": "list",
+          "cachedResultName": "Cars_Available",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Dp3j4MU_HL7emAZhBKcO_jkV2pciN-rqBjy-KW5s630/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Feuille 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Dp3j4MU_HL7emAZhBKcO_jkV2pciN-rqBjy-KW5s630/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Car_ID": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Car_ID__using_to_match_', ``, 'string') }}",
+            "Car_Model": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Car_Model', ``, 'string') }}",
+            "Brand": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Brand', ``, 'string') }}",
+            "Year": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Year', ``, 'string') }}",
+            "Transmission": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Transmission', ``, 'string') }}",
+            "Daily_Rate": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Daily_Rate', ``, 'string') }}",
+            "Status": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Status', ``, 'string') }}",
+            "Location": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Location', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "Car_ID"
+          ],
+          "schema": [
+            {
+              "id": "Car_ID",
+              "displayName": "Car_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Car_Model",
+              "displayName": "Car_Model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Brand",
+              "displayName": "Brand",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Year",
+              "displayName": "Year",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Transmission",
+              "displayName": "Transmission",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Daily_Rate",
+              "displayName": "Daily_Rate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Location",
+              "displayName": "Location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        720,
+        304
+      ],
+      "id": "a27e41f6-4d73-4a51-af49-65059672c7f3",
+      "name": "cars_status_tool",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RT6MxE4j8hDaB8MB",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "124lYDRUFVnFf1OYhG27BrXC-Wvdj9DEXmvp-EVPJcgI",
+          "mode": "list",
+          "cachedResultName": "activity_log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/124lYDRUFVnFf1OYhG27BrXC-Wvdj9DEXmvp-EVPJcgI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Feuille 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/124lYDRUFVnFf1OYhG27BrXC-Wvdj9DEXmvp-EVPJcgI/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('timestamp', ``, 'string') }}",
+            "action_type": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('action_type', ``, 'string') }}",
+            "car_id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('car_id', ``, 'string') }}",
+            "customer_name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('customer_name', ``, 'string') }}",
+            "agent_name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('agent_name', ``, 'string') }}",
+            "booking_id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('booking_id', ``, 'string') }}",
+            "details": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('details', ``, 'string') }}",
+            "status": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('status', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "action_type",
+              "displayName": "action_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "agent_name",
+              "displayName": "agent_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "customer_name",
+              "displayName": "customer_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "car_id",
+              "displayName": "car_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "booking_id",
+              "displayName": "booking_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "details",
+              "displayName": "details",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1040,
+        304
+      ],
+      "id": "2e5bb057-d173-455d-9c9b-db5a1e16ac05",
+      "name": "activity_log_tool",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RT6MxE4j8hDaB8MB",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Dp3j4MU_HL7emAZhBKcO_jkV2pciN-rqBjy-KW5s630",
+          "mode": "list",
+          "cachedResultName": "Cars_Available",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Dp3j4MU_HL7emAZhBKcO_jkV2pciN-rqBjy-KW5s630/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Feuille 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Dp3j4MU_HL7emAZhBKcO_jkV2pciN-rqBjy-KW5s630/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Car_Model",
+              "lookupValue": "={{ $json.Car_Model }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        880,
+        288
+      ],
+      "id": "e0e8689b-918c-463a-be42-5cb20ca29976",
+      "name": "car_availability_sheet_tool",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RT6MxE4j8hDaB8MB",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"Intent\": \"rent_car\",\n  \"Car_Model\": \"\",\n  \"Start_Date\": \"\",\n  \"End_Date\": \"\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1488,
+        272
+      ],
+      "id": "3abcb907-c303-47ca-b7ee-d09fdc01af5d",
+      "name": "Structured Output Parser"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive Trigger": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Google Gemini": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Simple Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Simple Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Token Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Vector Store1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Google Gemini1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Simple Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Simple Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "rental_requests_tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "cars_status_tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "activity_log_tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "car_availability_sheet_tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "07715816-dcad-47fb-99d3-a094cfb25be9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "86440951c4c81e9888fc7d59a73d7a90b18d4d25e1183fb81e64c250e21e0d5f"
+  },
+  "id": "pdWlaET2ZPDylv1R",
+  "tags": [
+    {
+      "createdAt": "2025-10-05T15:23:35.138Z",
+      "updatedAt": "2025-10-05T15:23:35.138Z",
+      "id": "9T6YWvWmEQWRNteU",
+      "name": "Restaurant with Karim"
+    }
+  ]
+}
